@@ -1,0 +1,12 @@
+[token]
+token_to_cloud = OAuth token yandex disk
+client_id = ClientID
+client_secret = ClientSecret
+
+[file_data]
+local_path = your local path
+dirname_in_cloud = name of dir in cloud
+frequency_sync_period = period of sync
+
+[log]
+path_to_file_log = None
