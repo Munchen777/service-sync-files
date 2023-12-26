@@ -4,9 +4,9 @@ client_id = ClientID
 client_secret = ClientSecret
 
 [file_data]
-local_path = your local path
-dirname_in_cloud = name of dir in cloud
-frequency_sync_period = period of sync
+local_path = your local path (/Users/your_name/docs/...)
+dirname_in_cloud = name of dir in cloud -> my_data
+frequency_sync_period = period of sync -> 25 (default in minutes)
 
 [log]
 path_to_file_log = None

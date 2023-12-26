@@ -12,16 +12,16 @@ class ConnToCloudService:
         self.my_dir_in_cloud = config.data_about_file.dirname_in_cloud
         # self.client_id = config.token.client_id
         # self.client_secret = config.token.client_secret
-        # self.cloud_path = config.data_about_file.dirname_in_cloud
         self.headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'Authorization': 'OAuth {}'.format(self.token_cloud),
             # 'path': self.my_dir_in_cloud
         }
+        self.frequency_sync_period = config.data_about_file.frequency_sync_period
 
     # def get_info_about_disk(self):
-    #     """ Получаем Oauth токен """
+        """ Получаем Oauth токен, если у вас этого еще нет """
     #     client_id = config.token.client_id
     #     client_secret = config.token.client_secret
     #     auth_url = "https://oauth.yandex.ru/authorize"
@@ -36,4 +36,6 @@ class ConnToCloudService:
     #     access_token = token["access_token"]
     #     self.token = access_token
     #     print(access_token)
+
+    # def get_info_about_cloud_dir(self, ):
 

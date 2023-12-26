@@ -7,7 +7,7 @@ from my_logger import my_logger
 class DataAboutFiles:
     local_path: str
     dirname_in_cloud: str
-    frequency_sync_period: str
+    frequency_sync_period: int
 
 
 @dataclass
