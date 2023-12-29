@@ -14,12 +14,13 @@ def find_filename_in_structure(structure):
 
 
 def add_changed_files_in_cloud(file: pathlib.Path, connection: ConnToCloudService) -> None:
+    print('Запустился метод add_changed_files_in_cloud')
     """ Для измененного файла берем ссылку для загрузки и загружаем """
     link_to_add_file = requests.get(f'{connection.url}/upload?path={connection.my_dir_in_cloud}/{file.name}'
                                     f'&overwrite=True',
                                     headers=connection.headers)
     response = link_to_add_file.json()
-    print(response)
+    # print(response)
     if 'href' not in link_to_add_file.json():
         error_409 = response['error']
         my_logger.error(f'Ошибка. Статус код: {link_to_add_file.status_code}\n'
@@ -55,21 +56,23 @@ def change_file_in_cloud(file: pathlib.Path, connection: ConnToCloudService) -> 
 
     # print(data_with_values_from_cloud)
     for element in data_with_values_from_cloud:
-        my_logger.info('За последнее время изменен файл с названием {}'.format(
+        my_logger.info('За промежуток времени изменен файл с названием {}'.format(
             data_with_values_from_cloud[element]
         ))
         print(file.absolute())
     add_changed_files_in_cloud(file, connection)
     # if not file.exists(follow_symlinks=False): ...
 
-class DiskResourceAlreadyExistsError(Exception):
-    def __str__(self):
-        return f'Файл уже существует в облаке.'
+# class DiskResourceAlreadyExistsError(Exception):
+#     def __str__(self):
+#         return f'Файл уже существует в облаке.'
 
 
 def add_existing_file_in_cloud(file: pathlib.Path, connection: ConnToCloudService) -> None:
-    """ Для нового файла берем ссылку для загрузки и загружаем """
-    # try:
+    """ Для нового файла берем ссылку для загрузки и загружаем.
+        Если нет в ответе ключа href(ссылки), то такой уже существует
+     """
+
     link_to_add_file = requests.get(f'{connection.url}/upload?path={connection.my_dir_in_cloud}/{file.name}'
                                     f'&overwrite=False',
                                     headers=connection.headers)
@@ -96,12 +99,11 @@ def delete_file_from_cloud(file: pathlib.Path, connection: ConnToCloudService) -
     except requests.Timeout as timeout_exc:
         my_logger.error(f'Исключение timeout: {timeout_exc}')
 
-    my_logger.info(f'Удален файл из облака - {file.name}')
-
 
 def checking_new_file_with_no_changes(file: pathlib.Path, connection: ConnToCloudService) -> None:
     """ Загружаем новый, неизменный файл в облако. """
     try:
+        # Получаем названия файлов из облака
         add_nochanged_file = requests.get(f'{connection.url}/files?fields=items.name',
                                           headers=connection.headers)
         response = add_nochanged_file.json()
@@ -112,18 +114,25 @@ def checking_new_file_with_no_changes(file: pathlib.Path, connection: ConnToClou
     else:
 
         values_with_filenames_dct = response['items']
-        if values_with_filenames_dct: # если какие-то названия вернул сервер
-            print(values_with_filenames_dct)
+        """
+        Если возвращается пустой список - то на облаке нет файлов совсем,
+        иначе если, такой файл локально не существует -> удаляем файл
+        В цикле как бы генерируем путь, если бы файл был локальным 
+        для проверки такого на существование
+         """
+        if values_with_filenames_dct:
+            print(f'Hello from {values_with_filenames_dct}')
             for filename in values_with_filenames_dct:
                 filename_in_cloud = filename['name']
-                guess_path = file.absolute().parents[0] / filename_in_cloud # есть ли у нас такой путь
+                guess_path = file.absolute().parents[0] / filename_in_cloud
                 print(guess_path.name)
                 print(file.name)
-                if file.name != guess_path.name and file.exists():
+                # file.name != guess_path.name and
+                if file.exists():
                     my_logger.info(f'Такого файла {file.name} в облаке нет. Загружаю ...')
                     add_existing_file_in_cloud(file, connection)
-
-                elif file.name == guess_path.name and not guess_path.exists():
+                    # file.name == guess_path.name and
+                if not guess_path.exists():
                     my_logger.info(f'Из облака убираю удаленный файл {file.name}')
                     delete_file_from_cloud(filename_in_cloud, connection)
 
@@ -132,20 +141,9 @@ def checking_new_file_with_no_changes(file: pathlib.Path, connection: ConnToClou
                 my_logger.info(f'В облаке никаких файлов нет.')
                 add_existing_file_in_cloud(file, connection)
 
-                    # удаляю из облака
-        # else:
-        #     my_logger.info(f'Такого файла {file.name} в облаке нет. Загружаю ...')
-        #     if file.exists():
-        #         add_existing_file_in_cloud(file, connection)
-            # загружаю на облако
 
-
-
-
-    return  # ?
-
-
-def checking_for_deleting(connection: ConnToCloudService):
+def checking_for_deleting(connection: ConnToCloudService) -> None:
+    """ Удаляем все файлы из облака, если локально папка пустая """
     try:
         add_nochanged_file = requests.get(f'{connection.url}/files?fields=items.name',
                                           headers=connection.headers)
@@ -157,18 +155,18 @@ def checking_for_deleting(connection: ConnToCloudService):
     else:
 
         values_with_filenames_dct = response['items']
-        if values_with_filenames_dct:  # если какие-то названия вернул сервер
+        if values_with_filenames_dct:
             print(values_with_filenames_dct)
             for filename in values_with_filenames_dct:
                 filename_in_cloud = filename['name']
-                query_for_deleting = requests.delete(f'{connection.url}?path={filename_in_cloud}?permanently=False',
+                print('В попытке удалить файл, если такой есть локально', filename_in_cloud)
+                query_for_deleting = requests.delete(f'{connection.url}?path={connection.my_dir_in_cloud}/{filename_in_cloud}&permanently=False',
                                                      headers=connection.headers)
 
 
+def create_folder(connection: ConnToCloudService) -> None:
 
-def create_folder(connection: ConnToCloudService):
-
-    """ Создаем облачную директорию. Если она существует, то логгер уведомит. """
+    """ Создаем облачную директорию. Если она существует, то my_logger уведомит. """
 
     info_disk_query = requests.put(f'{connection.url}?path={connection.my_dir_in_cloud}',
                                    headers=connection.headers)
@@ -176,7 +174,7 @@ def create_folder(connection: ConnToCloudService):
     response = info_disk_query.json()
     if re.match(r'DiskPathPointsToExistent', response['error']):
         my_logger.info(f'Директория с {connection.my_dir_in_cloud} именем уже существует.')
-    # print(response)
+
     path = pathlib.Path('/Users/georgiy/Documents/docs')
     while True:
         """ Получаем информацию о файлах на облаке. """
@@ -184,9 +182,7 @@ def create_folder(connection: ConnToCloudService):
         get_info_about_cloud_dir = requests.get(f'{connection.url}?path={connection.my_dir_in_cloud}',
                                                 headers=connection.headers)
         response = get_info_about_cloud_dir.json()
-        # print(response)
-        last_modified_time_in_cloud = response['modified']
-        # print(last_modified_time_in_cloud)
+
         date_time_utc = datetime.datetime.now()
         for file in path.iterdir():
             if file.is_file() and not file.match(r'.DS_Store'):
@@ -194,19 +190,17 @@ def create_folder(connection: ConnToCloudService):
                 # file = file.with_suffix('.docx')
 
                 delta_time = (date_time_utc - modified_local_file).seconds
-                # Период синхронизации - 25 мин.
 
                 if int(connection.frequency_sync_period) > delta_time / 60:
-                    print(file.name)
-                    print('Файл изменен')
+                    my_logger.info(f'Файл {file.name} изменен {file.stat().st_mtime}')
                     change_file_in_cloud(file, connection)
                 else:
-                    print(file.name)
-                    print('Файл не изменен')
+                    print(f'Файл {file.name} не изменен. Нужно либо удалить, либо загрузить.')
                     checking_new_file_with_no_changes(file, connection)
 
-        # if len(list(path.iterdir())) <= 1:
-        #     my_logger.info(f'Локальная папка полностью пустая. Проверю облако.')
-        #     checking_for_deleting(connection)
+        if len([file for file in path.iterdir()]) <= 1:
+            my_logger.info(f'Локальная папка полностью пустая. Проверю облако.')
+            checking_for_deleting(connection)
 
+        print('Пауза')
         print(time.sleep(60*int(connection.frequency_sync_period)))
