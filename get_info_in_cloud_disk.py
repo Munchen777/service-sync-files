@@ -20,12 +20,11 @@ def add_changed_files_in_cloud(file: pathlib.Path, connection: ConnToCloudServic
                                     f'&overwrite=True',
                                     headers=connection.headers)
     response = link_to_add_file.json()
-
     if 'href' not in link_to_add_file.json():
         error_409 = response['error']
         my_logger.error(f'Ошибка. Статус код: {link_to_add_file.status_code}\n'
                         f'Исключение: {error_409}')
-        return  #
+        return
     else:
         url_to_upload_href = link_to_add_file.json()['href']
         files = {'file': open(str(file), 'rb')}
@@ -40,7 +39,6 @@ def change_file_in_cloud(file: pathlib.Path, connection: ConnToCloudService) -> 
     except requests.ConnectionError as conn_exc:
         my_logger.error(f'Произошла ошибка подключения при попытке загружить измененный файл: {conn_exc}')
     response = get_info_for_changes.json()
-
     data = ['name', 'modified']
     data_with_values_from_cloud = {}
     for value in find_filename_in_structure(response):
@@ -118,7 +116,6 @@ def checking_new_file_with_no_changes(file: pathlib.Path, connection: ConnToClou
                 guess_path = file.absolute().parents[0] / filename_in_cloud
                 print(guess_path.name)
                 print(file.name)
-
                 if file.exists():
                     my_logger.info(f'Такого файла {file.name} в облаке нет. Загружаю ...')
                     add_existing_file_in_cloud(file, connection)
@@ -193,4 +190,4 @@ def create_folder(connection: ConnToCloudService) -> None:
             checking_for_deleting(connection)
 
         print('Пауза')
-        print(time.sleep(60*int(connection.frequency_sync_period)))
+        print(time.sleep(int(connection.frequency_sync_period)))

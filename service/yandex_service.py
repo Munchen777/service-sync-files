@@ -17,19 +17,19 @@ class ConnToCloudService:
         }
         self.frequency_sync_period = config.data_about_file.frequency_sync_period
 
-    def get_oauth_token(self):
-        """ Получаем Oauth токен, если у вас этого еще нет """
-        client_id = config.token.client_id
-        client_secret = config.token.client_secret
-        auth_url = "https://oauth.yandex.ru/authorize"
-        token_url = "https://oauth.yandex.ru/token"
-        oauth = OAuth2Session(client_id=client_id)
-        authorization_url, state = oauth.authorization_url(auth_url, force_confirm="true")
-        print("Перейдите по ссылке, авторизуйтесь и скопируйте код:", authorization_url)
-        code = input("Вставьте одноразовый код: ")
-        token = oauth.fetch_token(token_url=token_url,
-                                  code=code,
-                                  client_secret=client_secret)
-        access_token = token["access_token"]
-        self.token = access_token
-        print(access_token)
+    # def get_token(self):
+    #     """ Получаем Oauth токен, если у вас этого еще нет """
+    #     client_id = config.token.client_id
+    #     client_secret = config.token.client_secret
+    #     auth_url = "https://oauth.yandex.ru/authorize"
+    #     token_url = "https://oauth.yandex.ru/token"
+    #     oauth = OAuth2Session(client_id=client_id)
+    #     authorization_url, state = oauth.authorization_url(auth_url, force_confirm="true")
+    #     print("Перейдите по ссылке, авторизуйтесь и скопируйте код:", authorization_url)
+    #     code = input("Вставьте одноразовый код: ")
+    #     token = oauth.fetch_token(token_url=token_url,
+    #                               code=code,
+    #                               client_secret=client_secret)
+    #     access_token = token["access_token"]
+    #     self.token = access_token
+    #     print(access_token)
