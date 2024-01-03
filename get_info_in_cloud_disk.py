@@ -1,4 +1,4 @@
-import requests, re, hashlib, datetime, time, pathlib
+import requests, re, datetime, time, pathlib
 from service.yandex_service import ConnToCloudService
 from my_logger import my_logger
 
@@ -20,7 +20,7 @@ def add_changed_files_in_cloud(file: pathlib.Path, connection: ConnToCloudServic
                                     f'&overwrite=True',
                                     headers=connection.headers)
     response = link_to_add_file.json()
-    # print(response)
+
     if 'href' not in link_to_add_file.json():
         error_409 = response['error']
         my_logger.error(f'Ошибка. Статус код: {link_to_add_file.status_code}\n'
@@ -30,8 +30,6 @@ def add_changed_files_in_cloud(file: pathlib.Path, connection: ConnToCloudServic
         url_to_upload_href = link_to_add_file.json()['href']
         files = {'file': open(str(file), 'rb')}
         upload_changed_file = requests.put(url_to_upload_href, files=files)
-        print(upload_changed_file.status_code)
-
 
 
 def change_file_in_cloud(file: pathlib.Path, connection: ConnToCloudService) -> None:
@@ -42,8 +40,7 @@ def change_file_in_cloud(file: pathlib.Path, connection: ConnToCloudService) -> 
     except requests.ConnectionError as conn_exc:
         my_logger.error(f'Произошла ошибка подключения при попытке загружить измененный файл: {conn_exc}')
     response = get_info_for_changes.json()
-    # print(response)
-    # data = ['name', 'modified']
+
     data = ['name', 'modified']
     data_with_values_from_cloud = {}
     for value in find_filename_in_structure(response):
@@ -54,18 +51,12 @@ def change_file_in_cloud(file: pathlib.Path, connection: ConnToCloudService) -> 
             if element == value[0] and file.name == value[1] and not data_with_values_from_cloud.get(element):
                 data_with_values_from_cloud[element] = value[1]
 
-    # print(data_with_values_from_cloud)
     for element in data_with_values_from_cloud:
         my_logger.info('За промежуток времени изменен файл с названием {}'.format(
             data_with_values_from_cloud[element]
         ))
         print(file.absolute())
     add_changed_files_in_cloud(file, connection)
-    # if not file.exists(follow_symlinks=False): ...
-
-# class DiskResourceAlreadyExistsError(Exception):
-#     def __str__(self):
-#         return f'Файл уже существует в облаке.'
 
 
 def add_existing_file_in_cloud(file: pathlib.Path, connection: ConnToCloudService) -> None:
@@ -127,11 +118,11 @@ def checking_new_file_with_no_changes(file: pathlib.Path, connection: ConnToClou
                 guess_path = file.absolute().parents[0] / filename_in_cloud
                 print(guess_path.name)
                 print(file.name)
-                # file.name != guess_path.name and
+
                 if file.exists():
                     my_logger.info(f'Такого файла {file.name} в облаке нет. Загружаю ...')
                     add_existing_file_in_cloud(file, connection)
-                    # file.name == guess_path.name and
+
                 if not guess_path.exists():
                     my_logger.info(f'Из облака убираю удаленный файл {file.name}')
                     delete_file_from_cloud(filename_in_cloud, connection)
@@ -187,7 +178,6 @@ def create_folder(connection: ConnToCloudService) -> None:
         for file in path.iterdir():
             if file.is_file() and not file.match(r'.DS_Store'):
                 modified_local_file = datetime.datetime.fromtimestamp(file.stat().st_mtime)
-                # file = file.with_suffix('.docx')
 
                 delta_time = (date_time_utc - modified_local_file).seconds
 
